@@ -13,30 +13,49 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let cancelled = false;
+
         async function loadDashboard() {
+            setLoading(true);
+            setError("");
+
             try {
                 const result = await getDashboard(token);
-                setData(result);
-            } catch (err) {
-                setError(err.message);
-
-                if (err.message === "Token inválido" ||
-                    err.message === "Token expirado" ||
-                    err.message === "Not authenticated") {
-                    logout();
-                    navigate("/login");
+                if (!cancelled) {
+                    setData(result);
                 }
+            } catch (err) {
+                if (cancelled) return;
+
+                if (err.status === 401) {
+                    logout();
+                    navigate("/login", { replace: true });
+                    return;
+                }
+
+                setError(err.message || "No se pudo cargar el dashboard.");
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         }
 
-        loadDashboard();
+        if (!token) {
+            logout();
+            navigate("/login", { replace: true });
+        } else {
+            loadDashboard();
+        }
+
+        return () => {
+            cancelled = true;
+        };
     }, [token, logout, navigate]);
 
     function handleLogout() {
         logout();
-        navigate("/login");
+        navigate("/login", { replace: true });
     }
 
     if (loading) {
@@ -44,13 +63,21 @@ export default function Dashboard() {
     }
 
     if (error) {
-        return <p>Error: {error}</p>;
+        return (
+            <main>
+                <h1>No se pudo cargar el Dashboard</h1>
+                <p>{error}</p>
+                <button onClick={handleLogout}>
+                    Volver al inicio de sesión
+                </button>
+            </main>
+        );
     }
 
     return (
         <main>
             <h1>Bienvenido</h1>
-            <p>{data?.username}</p>
+            <p>Usuario: {data?.username}</p>
             <p>{data?.message}</p>
             <p>Usuario autorizado</p>
 

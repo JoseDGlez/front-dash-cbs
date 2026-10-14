@@ -1,7 +1,24 @@
-const API_URL= "http://127.0.0.1:8000";
+const API_URL= "http://127.0.0.1:3000";
+
+async function requestJson(url,options={}) {
+    const response = await fetch(url,options);
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const error = new Error(
+            data.detail || "Ocurrió un error al comunicarse con el servidor."
+        );
+
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
+}
 
 export async function loginUser(username, password){
-    const response = await fetch(`${API_URL}/api/login`,{
+    return requestJson(`${API_URL}/api/login`,{
         method: "POST",
         headers: {
             "Content-type":"application/json"
@@ -11,28 +28,13 @@ export async function loginUser(username, password){
             password
         })
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.detail || "Error al iniciar sesion");
-    }
-
-    return data;
 }
 
 export async function getDashboard(token) {
-    const response = await fetch(`${API_URL}/api/dashboard`, {
+    return requestJson(`${API_URL}/api/dashboard`, {
         method: "GET",
         headers: {
             Authorization: `Bearer ${token}`
         }
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.detail || "No autorizado");
-    }
-    return data;
 }
